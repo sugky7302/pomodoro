@@ -28,6 +28,10 @@ const isOffscreenMessage = (message: unknown): message is OffscreenMessage =>
   'target' in message &&
   (message as OffscreenMessage).target === OFFSCREEN_TARGET
 
+/**
+ * 檢查是否已建立 offscreen document
+ * @returns Promise 解析為布林值，表示 offscreen document 是否存在
+ */
 const hasOffscreenDocument = async () => {
   const getContexts = (chrome.runtime as unknown as {
     getContexts?: (options: { contextTypes: string[] }) => Promise<unknown[]>
@@ -36,22 +40,35 @@ const hasOffscreenDocument = async () => {
     const contexts = await getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] })
     return contexts.length > 0
   }
-  const clients = await self.clients.matchAll()
-  const url = chrome.runtime.getURL(OFFSCREEN_URL)
-  return clients.some((client) => client.url === url)
+  // Fallback for older Chrome versions
+  if (typeof self !== 'undefined' && 'clients' in self) {
+    const sw = self as unknown as { clients: { matchAll: () => Promise<Array<{ url: string }>> } }
+    const clients = await sw.clients.matchAll()
+    const url = chrome.runtime.getURL(OFFSCREEN_URL)
+    return clients.some((client: { url: string }) => client.url === url)
+  }
+  return false
 }
 
+/**
+ * 確保 offscreen document 已建立（用於音效播放）
+ * @description 若不存在則建立，已存在則跳過
+ */
 const ensureOffscreenDocument = async () => {
   if (!chrome.offscreen) return
   const exists = await hasOffscreenDocument()
   if (exists) return
   await chrome.offscreen.createDocument({
     url: OFFSCREEN_URL,
-    reasons: ['AUDIO_PLAYBACK'],
+    reasons: [chrome.offscreen.Reason.AUDIO_PLAYBACK],
     justification: '播放番茄鐘到期提醒音效'
   })
 }
 
+/**
+ * 播放番茄鐘到期提醒音效
+ * @description 透過 offscreen document 播放音效，失敗時静默忽略以免中斷流程
+ */
 const playAlarmSound = async () => {
   try {
     if (!chrome.offscreen) return
@@ -82,6 +99,11 @@ const updateData = async (
   return next
 }
 
+/**
+ * 發送階段完成通知
+ * @param phase - 完成的階段名稱（中文）
+ * @param todoTitle - 關聯的待辦任務標題（可選）
+ */
 const notifyPhaseComplete = async (phase: string, todoTitle?: string) => {
   const suffix = todoTitle ? `（${todoTitle}）` : ''
   await chrome.notifications.create({
@@ -94,6 +116,10 @@ const notifyPhaseComplete = async (phase: string, todoTitle?: string) => {
   })
 }
 
+/**
+ * 發送任務完成通知
+ * @param title - 完成的任務標題
+ */
 const notifyTodoComplete = async (title: string) => {
   await chrome.notifications.create({
     type: 'basic',
@@ -137,7 +163,7 @@ const handleTimerCompletion = async () => {
 
     if (result.completedFocus.todoId) {
       next.todos = next.todos.map((todo) => {
-        if (todo.id !== result.completedFocus.todoId) return todo
+        if (todo.id !== result.completedFocus!.todoId) return todo
         const planned = Math.max(1, todo.plannedPomodoros)
         const completed = todo.completedPomodoros + 1
         const isCompleted = completed >= planned

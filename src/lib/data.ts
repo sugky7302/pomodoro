@@ -35,6 +35,12 @@ const clampTodoNumber = (value: number | undefined, fallback: number) => {
   return Math.max(0, Math.round(value))
 }
 
+/**
+ * 正規化待辦清單資料
+ * @param todos - 原始待辦清單
+ * @param nowIso - ISO 格式的當前時間字串
+ * @returns 正規化後的待辦清單，確保所有欄位有效
+ */
 export const normalizeTodos = (
   todos: PomodoroTodo[],
   nowIso = new Date().toISOString()
