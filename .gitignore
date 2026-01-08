@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+npm-debug.log*
+
+# 保護含有實際 OAuth Client ID 的檔案
+public/manifest.json

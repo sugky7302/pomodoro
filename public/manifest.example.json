@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Pomodoro 雲端番茄鐘",
+  "version": "0.1.0",
+  "description": "可設定專注與休息時間，支援群組/標籤並同步至 Google Drive 的番茄鐘。",
+  "action": {
+    "default_title": "番茄鐘",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "alarms", "identity", "notifications"],
+  "host_permissions": ["https://www.googleapis.com/*"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "oauth2": {
+    "client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/drive.file"]
+  }
+}
