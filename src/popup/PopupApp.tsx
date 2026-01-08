@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { STORAGE_KEY } from '../lib/data'
+import { STORAGE_KEY, normalizeData } from '../lib/data'
 import { sendMessage } from '../lib/messages'
 import { getPhaseDurationSeconds } from '../lib/timer'
-import type { PomodoroData, PomodoroTag } from '../lib/types'
+import type { PomodoroData, PomodoroTag, PomodoroTodo } from '../lib/types'
 
 const phaseLabels: Record<string, string> = {
   focus: '專注',
@@ -18,6 +18,9 @@ const formatTime = (totalSeconds: number) => {
 }
 
 const getTagName = (tag: PomodoroTag) => tag.name || '未命名'
+const getTodoTitle = (todo: PomodoroTodo) => todo.title || '未命名'
+const formatTodoProgress = (todo: PomodoroTodo) =>
+  `${todo.completedPomodoros}/${todo.plannedPomodoros} 輪`
 
 const PopupApp = () => {
   const [data, setData] = useState<PomodoroData | null>(null)
@@ -31,7 +34,7 @@ const PopupApp = () => {
       const response = await sendMessage({ type: 'getData' })
       if (!mounted) return
       if (response.ok) {
-        setData(response.data)
+        setData(normalizeData(response.data))
       } else {
         setError(response.error)
       }
@@ -43,7 +46,8 @@ const PopupApp = () => {
       area: string
     ) => {
       if (area === 'local' && changes[STORAGE_KEY]?.newValue) {
-        setData(changes[STORAGE_KEY].newValue)
+        const next = normalizeData(changes[STORAGE_KEY].newValue as PomodoroData)
+        setData(next)
       }
     }
     chrome.storage.onChanged.addListener(onChanged)
@@ -65,6 +69,11 @@ const PopupApp = () => {
   const totalSeconds = useMemo(() => {
     if (!data) return 1
     return getPhaseDurationSeconds(data.state.currentPhase, data.settings)
+  }, [data])
+
+  const activeTodo = useMemo(() => {
+    if (!data) return null
+    return data.todos.find((todo) => todo.id === data.state.activeTodoId) ?? null
   }, [data])
 
   const progressDegree = useMemo(() => {
@@ -105,6 +114,14 @@ const PopupApp = () => {
   const setActiveGroup = async (groupId: string) => {
     const payload = groupId === 'none' ? undefined : groupId
     const response = await sendMessage({ type: 'setActiveGroup', payload })
+    if (response.ok) {
+      setData(response.data)
+    }
+  }
+
+  const setActiveTodo = async (todoId: string) => {
+    const payload = todoId === 'none' ? undefined : todoId
+    const response = await sendMessage({ type: 'setActiveTodo', payload })
     if (response.ok) {
       setData(response.data)
     }
@@ -233,6 +250,72 @@ const PopupApp = () => {
       </section>
 
       <section className="card fade-up" style={{ animationDelay: '0.16s' }}>
+        <h2>待辦清單</h2>
+        <div className="field">
+          <label>目前任務</label>
+          <select
+            value={data.state.activeTodoId ?? 'none'}
+            onChange={(event) => setActiveTodo(event.target.value)}
+          >
+            <option value="none">不指定</option>
+            {data.todos.map((todo) => (
+              <option key={todo.id} value={todo.id}>
+                {getTodoTitle(todo)}（{formatTodoProgress(todo)}）
+              </option>
+            ))}
+          </select>
+        </div>
+        {data.todos.length === 0 ? (
+          <p className="muted">請到設定中心新增待辦任務</p>
+        ) : (
+          <div className="todo-list">
+            {data.todos.map((todo) => {
+              const isActive = todo.id === data.state.activeTodoId
+              const isCompleted = todo.isCompleted
+              return (
+                <div
+                  key={todo.id}
+                  className={`todo-item ${isActive ? 'active' : ''} ${
+                    isCompleted ? 'completed' : ''
+                  }`}
+                >
+                  <div>
+                    <p className="todo-title">{getTodoTitle(todo)}</p>
+                    <p className="muted">{formatTodoProgress(todo)}</p>
+                  </div>
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={() => setActiveTodo(todo.id)}
+                  >
+                    使用
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {activeTodo ? (
+          <div className="todo-progress">
+            <div className="todo-progress-bar">
+              <div
+                className="todo-progress-fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round(
+                      (activeTodo.completedPomodoros / activeTodo.plannedPomodoros) * 100
+                    )
+                  )}%`
+                }}
+              />
+            </div>
+            <p className="muted">進度：{formatTodoProgress(activeTodo)}</p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="card fade-up" style={{ animationDelay: '0.24s' }}>
         <h2>雲端同步</h2>
         <p className="muted">
           位置：{data.driveConfig.folderPath}/{data.driveConfig.fileName}

@@ -10,6 +10,7 @@ describe('data', () => {
     expect(data.state.isRunning).toBe(false)
     expect(data.groups).toEqual([])
     expect(data.tags).toEqual([])
+    expect(data.todos).toEqual([])
     expect(data.sessions).toEqual([])
   })
 
@@ -40,5 +41,31 @@ describe('data', () => {
     expect(normalized.settings).toBeDefined()
     expect(normalized.state).toBeDefined()
     expect(normalized.driveConfig).toBeDefined()
+  })
+
+  it('正規化資料應修正待辦清單欄位', () => {
+    const partial = {
+      todos: [
+        {
+          id: 't1',
+          title: '  ',
+          plannedPomodoros: 0,
+          completedPomodoros: -2
+        }
+      ]
+    }
+    const normalized = normalizeData(partial)
+    expect(normalized.todos[0].title).toBe('未命名')
+    expect(normalized.todos[0].plannedPomodoros).toBe(1)
+    expect(normalized.todos[0].completedPomodoros).toBe(0)
+  })
+
+  it('正規化資料應移除不存在的當前任務', () => {
+    const partial = {
+      state: { activeTodoId: 'missing' },
+      todos: [{ id: 't1', title: '測試', plannedPomodoros: 1, completedPomodoros: 0 }]
+    }
+    const normalized = normalizeData(partial)
+    expect(normalized.state.activeTodoId).toBeUndefined()
   })
 })

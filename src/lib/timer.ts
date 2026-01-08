@@ -6,6 +6,7 @@ export type CompletedFocus = {
   durationSeconds: number
   groupId?: string
   tagIds: string[]
+  todoId?: string
 }
 
 export type TimerTickResult = {
@@ -179,7 +180,8 @@ export const tickTimer = (
       endAt: now,
       durationSeconds: Math.max(0, Math.round((now - startAt) / 1000)),
       groupId: state.activeGroupId,
-      tagIds: state.activeTagIds
+      tagIds: state.activeTagIds,
+      todoId: state.activeTodoId
     }
   }
 

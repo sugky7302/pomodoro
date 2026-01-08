@@ -3,8 +3,10 @@
 ## 功能
 - 可設定專注、短休息、長休息與長休息週期
 - 支援群組與標籤分類
+- 內建待辦清單，可設定每個任務的番茄鐘輪數
 - 使用 Google Drive 同步 `pomodoro-data.json`
 - 支援在 UI 指定雲端資料夾路徑與檔名
+- 到期提示視窗與提醒音效
 
 ## 開發與建置
 ```bash
@@ -22,6 +24,7 @@ npm run build
 2. 在允許的擴充功能 ID 中加入此擴充功能的 ID
 3. 複製 `public/manifest.example.json` 為 `public/manifest.json`
 4. 將 Client ID 填入 `public/manifest.json` 的 `oauth2.client_id`
+5. 若瀏覽器不支援 `chrome.identity.getAuthToken`，會改用授權視窗流程
 
 **注意**：請勿將包含真實 Client ID 的 `manifest.json` 提交到版本控制系統
 

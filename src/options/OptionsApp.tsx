@@ -7,7 +7,8 @@ import type {
   PomodoroData,
   PomodoroGroup,
   PomodoroSettings,
-  PomodoroTag
+  PomodoroTag,
+  PomodoroTodo
 } from '../lib/types'
 
 const OptionsApp = () => {
@@ -22,6 +23,8 @@ const OptionsApp = () => {
   const [newTagName, setNewTagName] = useState('')
   const [newGroupColor, setNewGroupColor] = useState('#ff6b4a')
   const [newTagColor, setNewTagColor] = useState('#2f6e6a')
+  const [newTodoTitle, setNewTodoTitle] = useState('')
+  const [newTodoPomodoros, setNewTodoPomodoros] = useState(1)
 
   useEffect(() => {
     let mounted = true
@@ -109,6 +112,7 @@ const OptionsApp = () => {
 
   const groups = useMemo(() => data?.groups ?? [], [data])
   const tags = useMemo(() => data?.tags ?? [], [data])
+  const todos = useMemo(() => data?.todos ?? [], [data])
 
   const updateGroups = async (nextGroups: PomodoroGroup[]) => {
     const response = await sendMessage({ type: 'updateGroups', payload: nextGroups })
@@ -121,6 +125,15 @@ const OptionsApp = () => {
 
   const updateTags = async (nextTags: PomodoroTag[]) => {
     const response = await sendMessage({ type: 'updateTags', payload: nextTags })
+    if (!response.ok) {
+      setError(response.error)
+      return
+    }
+    setData(response.data)
+  }
+
+  const updateTodos = async (nextTodos: PomodoroTodo[]) => {
+    const response = await sendMessage({ type: 'updateTodos', payload: nextTodos })
     if (!response.ok) {
       setError(response.error)
       return
@@ -144,6 +157,28 @@ const OptionsApp = () => {
     setNewTagName('')
   }
 
+  const addTodo = async () => {
+    const title = newTodoTitle.trim()
+    if (!title) return
+    const plannedPomodoros = Math.max(1, Number(newTodoPomodoros) || 1)
+    const nowIso = new Date().toISOString()
+    const next = [
+      ...todos,
+      {
+        id: createId(),
+        title,
+        plannedPomodoros,
+        completedPomodoros: 0,
+        isCompleted: false,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      }
+    ]
+    await updateTodos(next)
+    setNewTodoTitle('')
+    setNewTodoPomodoros(1)
+  }
+
   const updateGroup = async (id: string, patch: Partial<PomodoroGroup>) => {
     const next = groups.map((group) =>
       group.id === id ? { ...group, ...patch } : group
@@ -156,6 +191,13 @@ const OptionsApp = () => {
     await updateTags(next)
   }
 
+  const updateTodo = async (id: string, patch: Partial<PomodoroTodo>) => {
+    const next = todos.map((todo) =>
+      todo.id === id ? { ...todo, ...patch, updatedAt: new Date().toISOString() } : todo
+    )
+    await updateTodos(next)
+  }
+
   const removeGroup = async (id: string) => {
     const next = groups.filter((group) => group.id !== id)
     await updateGroups(next)
@@ -164,6 +206,11 @@ const OptionsApp = () => {
   const removeTag = async (id: string) => {
     const next = tags.filter((tag) => tag.id !== id)
     await updateTags(next)
+  }
+
+  const removeTodo = async (id: string) => {
+    const next = todos.filter((todo) => todo.id !== id)
+    await updateTodos(next)
   }
 
   if (!data || !pendingSettings || !pendingDrive) {
@@ -375,6 +422,62 @@ const OptionsApp = () => {
       </section>
 
       <section className="card fade-up" style={{ animationDelay: '0.24s' }}>
+        <h2>待辦清單</h2>
+        <div className="list">
+          {todos.length === 0 ? (
+            <p className="muted">尚未建立待辦</p>
+          ) : (
+            todos.map((todo) => (
+              <div key={todo.id} className="todo-row">
+                <input
+                  type="text"
+                  value={todo.title}
+                  onChange={(event) => updateTodo(todo.id, { title: event.target.value })}
+                />
+                <input
+                  type="number"
+                  min={1}
+                  value={todo.plannedPomodoros}
+                  onChange={(event) =>
+                    updateTodo(todo.id, {
+                      plannedPomodoros: Math.max(1, Number(event.target.value) || 1),
+                      isCompleted:
+                        todo.completedPomodoros >= Math.max(1, Number(event.target.value) || 1)
+                    })
+                  }
+                />
+                <span className="todo-progress-text">
+                  {todo.completedPomodoros}/{todo.plannedPomodoros}
+                </span>
+                <button className="ghost" onClick={() => removeTodo(todo.id)}>
+                  移除
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="todo-row">
+          <input
+            type="text"
+            placeholder="新增任務名稱"
+            value={newTodoTitle}
+            onChange={(event) => setNewTodoTitle(event.target.value)}
+          />
+          <input
+            type="number"
+            min={1}
+            value={newTodoPomodoros}
+            onChange={(event) => setNewTodoPomodoros(Math.max(1, Number(event.target.value) || 1))}
+          />
+          <span className="todo-progress-text">0/{newTodoPomodoros}</span>
+          <button className="primary" onClick={addTodo}>
+            新增
+          </button>
+        </div>
+        <p className="muted">完成一個專注階段會自動累計此任務的番茄鐘。</p>
+      </section>
+
+      <section className="card fade-up" style={{ animationDelay: '0.32s' }}>
         <h2>Google Drive 同步</h2>
         <div className="grid">
           <div className="field">

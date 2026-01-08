@@ -16,7 +16,7 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "alarms", "identity", "notifications"],
+  "permissions": ["storage", "alarms", "identity", "notifications", "offscreen"],
   "host_permissions": ["https://www.googleapis.com/*"],
   "options_ui": {
     "page": "options.html",

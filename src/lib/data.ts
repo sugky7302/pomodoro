@@ -1,4 +1,10 @@
-import type { DriveConfig, PomodoroData, PomodoroSettings, TimerState } from './types'
+import type {
+  DriveConfig,
+  PomodoroData,
+  PomodoroSettings,
+  PomodoroTodo,
+  TimerState
+} from './types'
 
 export const STORAGE_KEY = 'pomodoro-data'
 
@@ -24,6 +30,30 @@ export const createDefaultState = (settings: PomodoroSettings): TimerState => ({
   activeTagIds: []
 })
 
+const clampTodoNumber = (value: number | undefined, fallback: number) => {
+  if (!Number.isFinite(value)) return fallback
+  return Math.max(0, Math.round(value))
+}
+
+export const normalizeTodos = (
+  todos: PomodoroTodo[],
+  nowIso = new Date().toISOString()
+): PomodoroTodo[] =>
+  todos.map((todo) => {
+    const planned = Math.max(1, clampTodoNumber(todo.plannedPomodoros, 1))
+    const completed = clampTodoNumber(todo.completedPomodoros, 0)
+    const isCompleted = todo.isCompleted ?? completed >= planned
+    return {
+      ...todo,
+      title: todo.title?.trim() || '未命名',
+      plannedPomodoros: planned,
+      completedPomodoros: completed,
+      isCompleted,
+      createdAt: todo.createdAt ?? nowIso,
+      updatedAt: todo.updatedAt ?? nowIso
+    }
+  })
+
 export const createDefaultData = (): PomodoroData => {
   const settings = { ...DEFAULT_SETTINGS }
   return {
@@ -31,6 +61,7 @@ export const createDefaultData = (): PomodoroData => {
     settings,
     groups: [],
     tags: [],
+    todos: [],
     sessions: [],
     state: createDefaultState(settings),
     driveConfig: { ...DEFAULT_DRIVE_CONFIG },
@@ -40,8 +71,13 @@ export const createDefaultData = (): PomodoroData => {
 
 export const normalizeData = (data: Partial<PomodoroData>): PomodoroData => {
   const base = createDefaultData()
+  const nowIso = new Date().toISOString()
   const settings = { ...base.settings, ...data.settings }
+  const todos = normalizeTodos(data.todos ?? base.todos, nowIso)
   const state = { ...base.state, ...data.state }
+  const activeTodoId = todos.some((todo) => todo.id === state.activeTodoId)
+    ? state.activeTodoId
+    : undefined
   if (!state.secondsRemaining || state.secondsRemaining <= 0) {
     state.secondsRemaining = settings.focusMinutes * 60
   }
@@ -50,11 +86,15 @@ export const normalizeData = (data: Partial<PomodoroData>): PomodoroData => {
     ...base,
     ...data,
     settings,
-    state,
+    state: {
+      ...state,
+      activeTodoId
+    },
     groups: data.groups ?? base.groups,
     tags: data.tags ?? base.tags,
+    todos,
     sessions: data.sessions ?? base.sessions,
     driveConfig: { ...base.driveConfig, ...data.driveConfig },
-    updatedAt: data.updatedAt ?? base.updatedAt
+    updatedAt: data.updatedAt ?? nowIso
   }
 }

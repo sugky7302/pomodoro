@@ -232,6 +232,69 @@ label {
   align-items: center;
 }
 
+.todo-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 120px 90px auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.todo-progress-text {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.todo-list {
+  display: grid;
+  gap: 10px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.todo-item.active {
+  border-color: rgba(255, 107, 74, 0.5);
+  box-shadow: 0 10px 18px rgba(255, 107, 74, 0.2);
+}
+
+.todo-item.completed {
+  opacity: 0.75;
+}
+
+.todo-item.completed .todo-title {
+  text-decoration: line-through;
+}
+
+.todo-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.todo-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.todo-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(31, 27, 27, 0.1);
+  overflow: hidden;
+}
+
+.todo-progress-fill {
+  height: 100%;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+}
+
 .checkbox {
   display: flex;
   align-items: center;
@@ -285,6 +348,10 @@ label {
   }
 
   .list-item {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-row {
     grid-template-columns: 1fr;
   }
 }

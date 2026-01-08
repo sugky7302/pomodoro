@@ -9,6 +9,10 @@ export const sendMessage = async <T = PomodoroData>(
         resolve({ ok: false, error: chrome.runtime.lastError.message })
         return
       }
+      if (!response) {
+        resolve({ ok: false, error: '背景服務未回應，請重新載入擴充功能' })
+        return
+      }
       resolve(response)
     })
   })

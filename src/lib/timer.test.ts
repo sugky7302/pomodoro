@@ -93,7 +93,8 @@ describe('timer', () => {
     const state = {
       ...createDefaultState(baseSettings),
       activeGroupId: 'group1',
-      activeTagIds: ['tag1', 'tag2']
+      activeTagIds: ['tag1', 'tag2'],
+      activeTodoId: 'todo1'
     }
     const running = startTimer(state, baseSettings, now)
     const end = now + getPhaseDurationSeconds('focus', baseSettings) * 1000
@@ -102,6 +103,7 @@ describe('timer', () => {
     expect(result.completedFocus).toBeDefined()
     expect(result.completedFocus?.groupId).toBe('group1')
     expect(result.completedFocus?.tagIds).toEqual(['tag1', 'tag2'])
+    expect(result.completedFocus?.todoId).toBe('todo1')
     expect(result.completedFocus?.durationSeconds).toBeGreaterThan(0)
   })
 
@@ -139,4 +141,3 @@ describe('timer', () => {
     expect(duration).toBe(baseSettings.focusMinutes * 60)
   })
 })
-

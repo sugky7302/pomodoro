@@ -21,6 +21,16 @@ export type PomodoroTag = {
   color: string
 }
 
+export type PomodoroTodo = {
+  id: string
+  title: string
+  plannedPomodoros: number
+  completedPomodoros: number
+  isCompleted: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
 export type PomodoroSession = {
   id: string
   type: 'focus'
@@ -29,6 +39,7 @@ export type PomodoroSession = {
   durationMinutes: number
   groupId?: string
   tagIds: string[]
+  todoId?: string
   note?: string
 }
 
@@ -40,6 +51,7 @@ export type TimerState = {
   cycleCount: number
   activeGroupId?: string
   activeTagIds: string[]
+  activeTodoId?: string
   currentSessionStartAt?: number
 }
 
@@ -56,6 +68,7 @@ export type PomodoroData = {
   settings: PomodoroSettings
   groups: PomodoroGroup[]
   tags: PomodoroTag[]
+  todos: PomodoroTodo[]
   sessions: PomodoroSession[]
   state: TimerState
   driveConfig: DriveConfig
@@ -67,8 +80,10 @@ export type MessageRequest =
   | { type: 'updateSettings'; payload: PomodoroSettings }
   | { type: 'updateGroups'; payload: PomodoroGroup[] }
   | { type: 'updateTags'; payload: PomodoroTag[] }
+  | { type: 'updateTodos'; payload: PomodoroTodo[] }
   | { type: 'setActiveGroup'; payload?: string }
   | { type: 'setActiveTags'; payload: string[] }
+  | { type: 'setActiveTodo'; payload?: string }
   | { type: 'timerStart' }
   | { type: 'timerPause' }
   | { type: 'timerReset' }
